@@ -17,7 +17,6 @@ fn test_runner(tests: &[&dyn Fn()]) {
     unimplemented!();
 }
 
-
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     simpleosrust::test_panic_handler(info)

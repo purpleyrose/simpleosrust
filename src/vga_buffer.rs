@@ -2,6 +2,15 @@
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
+/// This enum defines the VGA colors that we can use, both in foreground (the colour of the text) and the background (the colour of the background)
+/// 
+/// # Example
+/// 
+/// ```rust
+/// 
+/// use vga_buffer::Color;
+/// let color = Color::Blue; // The color is now blue
+/// ```
 pub enum Color {
     Black = 0,
     Blue = 1,
@@ -37,7 +46,17 @@ impl ColorCode {
 
 
 
-
+/// This struct represents two things, any ASCII character on the screen, and the color of the character as a ColorCode
+/// 
+/// # Examples
+/// 
+/// ```rust
+/// let screen_char = ScreenChar {
+///     ascii_character: b'X', // The ASCII character is X
+///     color_code: ColorCode::new(Color::Yellow, Color::Black), // The color is yellow on black
+/// };
+/// 
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
 struct ScreenChar {
@@ -55,7 +74,7 @@ struct Buffer {
     chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
 }
 
-
+/// The `Writer` struct defines the data we use to write to the vga_buffer, such as the position, color and what buffer we are using. 
 pub struct Writer {
     colum_pos: usize,
     color_code: ColorCode,
