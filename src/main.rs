@@ -14,12 +14,16 @@ use simpleosrust::println;
 /// #[no_mangle] is also used here, because we don't want the compiler to mangle the name of this function, as the linker needs it to be called `_start`.
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    println!("Hello World{}", "!"); // This uses the println! macro from src/vga_buffer.rs that we defined
+    println!("Whussup big guy ;)"); // This uses the println! macro from src/vga_buffer.rs that we defined
 
 
     simpleosrust::init();
 
-    
+    fn stack_overflow() {
+        stack_overflow();
+    }
+
+    stack_overflow();
     #[cfg(test)]
     test_main(); // Entry point for custom tests
 

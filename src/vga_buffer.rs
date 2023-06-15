@@ -55,7 +55,7 @@ impl ColorCode {
 ///     ascii_character: b'X', // The ASCII character is X
 ///     color_code: ColorCode::new(Color::Yellow, Color::Black), // The color is yellow on black
 /// };
-/// 
+/// assert_eq!(screen_char.ascii_character, b'X');
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
