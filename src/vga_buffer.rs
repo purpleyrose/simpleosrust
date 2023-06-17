@@ -1,13 +1,12 @@
-
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 /// This enum defines the VGA colors that we can use, both in foreground (the colour of the text) and the background (the colour of the background)
-/// 
+///
 /// # Example
-/// 
+///
 /// ```rust
-/// 
+///
 /// use vga_buffer::Color;
 /// let color = Color::Blue; // The color is now blue
 /// ```
@@ -20,7 +19,7 @@ pub enum Color {
     Magenta = 5,
     Brown = 6,
     LightGray = 7,
-    DarkGray =8,
+    DarkGray = 8,
     LightBlue = 9,
     LightGreen = 10,
     LightCyan = 11,
@@ -29,9 +28,6 @@ pub enum Color {
     Yellow = 14,
     White = 15,
 }
-
-
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
@@ -44,12 +40,10 @@ impl ColorCode {
     }
 }
 
-
-
 /// This struct represents two things, any ASCII character on the screen, and the color of the character as a ColorCode
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```rust
 /// let screen_char = ScreenChar {
 ///     ascii_character: b'X', // The ASCII character is X
@@ -67,27 +61,26 @@ struct ScreenChar {
 const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
 
-
 use volatile::Volatile;
 #[repr(transparent)]
 struct Buffer {
     chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
 }
 
-/// The `Writer` struct defines the data we use to write to the vga_buffer, such as the position, color and what buffer we are using. 
+/// The `Writer` struct defines the data we use to write to the vga_buffer, such as the position, color and what buffer we are using.
 pub struct Writer {
     colum_pos: usize,
     color_code: ColorCode,
-    buffer: &'static mut Buffer
+    buffer: &'static mut Buffer,
 }
 
-use spin::Mutex;
 use lazy_static::lazy_static;
-lazy_static!{
+use spin::Mutex;
+lazy_static! {
     pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
         colum_pos: 0,
         color_code: ColorCode::new(Color::Yellow, Color::Black),
-        buffer: unsafe {&mut *(0xb8000 as *mut Buffer)},
+        buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
     });
 }
 
@@ -99,11 +92,14 @@ impl Writer {
                 if self.colum_pos >= BUFFER_WIDTH {
                     self.new_line();
                 }
-                let row = BUFFER_HEIGHT -1;
+                let row = BUFFER_HEIGHT - 1;
                 let col = self.colum_pos;
 
                 let color_code = self.color_code;
-                self.buffer.chars[row][col].write(ScreenChar { ascii_character: byte, color_code, });
+                self.buffer.chars[row][col].write(ScreenChar {
+                    ascii_character: byte,
+                    color_code,
+                });
                 self.colum_pos += 1;
             }
         }
@@ -127,11 +123,11 @@ impl Writer {
                 self.buffer.chars[row - 1][col].write(character);
             }
         }
-        self.clear_row(BUFFER_HEIGHT -1);
+        self.clear_row(BUFFER_HEIGHT - 1);
         self.colum_pos = 0;
     }
 
-    fn clear_row(&mut self, row:usize) {
+    fn clear_row(&mut self, row: usize) {
         let blank = ScreenChar {
             ascii_character: b' ',
             color_code: self.color_code,
@@ -141,8 +137,6 @@ impl Writer {
         }
     }
 }
-
-
 
 use core::fmt;
 
@@ -167,9 +161,12 @@ macro_rules! println {
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
-    WRITER.lock().write_fmt(args).unwrap();
-}
+    use x86_64::instructions::interrupts;
 
+    interrupts::without_interrupts(|| {
+        WRITER.lock().write_fmt(args).unwrap();
+    });
+}
 
 #[test_case]
 fn test_println_simple() {
@@ -184,10 +181,15 @@ fn test_println_many() {
 
 #[test_case]
 fn test_println_output() {
+    use core::fmt::Write;
+    use x86_64::instructions::interrupts;
     let s = "Some test string that fits on a single line";
-    println!("{}", s);
-    for (i, c) in s.chars().enumerate() {
-        let screen_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
-        assert_eq!(char::from(screen_char.ascii_character), c);
-    }
+    interrupts::without_interrupts(|| {
+        let mut writer = WRITER.lock();
+        writeln!(writer, "\n{}", s).expect("Writeln failed");
+        for (i, c) in s.chars().enumerate() {
+            let screen_char = writer.buffer.chars[BUFFER_HEIGHT - 2][i].read();
+            assert_eq!(char::from(screen_char.ascii_character), c);
+        }
+    });
 }

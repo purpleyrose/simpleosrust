@@ -4,7 +4,6 @@
 #![test_runner(simpleosrust::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
-
 use core::panic::PanicInfo;
 use simpleosrust::println;
 
@@ -16,19 +15,13 @@ use simpleosrust::println;
 pub extern "C" fn _start() -> ! {
     println!("Whussup big guy ;)"); // This uses the println! macro from src/vga_buffer.rs that we defined
 
-
     simpleosrust::init();
 
-    fn stack_overflow() {
-        stack_overflow();
-    }
-
-    stack_overflow();
     #[cfg(test)]
     test_main(); // Entry point for custom tests
 
     println!("It did not crash!");
-    loop{}
+    simpleosrust::hlt_loop();
 }
 
 /// This function is called on panic, but only if we are not testing
@@ -36,7 +29,7 @@ pub extern "C" fn _start() -> ! {
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     println!("{}", info); // Prints the panic info
-    loop {}
+    simpleosrust::hlt_loop();
 }
 /// This version of the panic function *is* called on panic, but only if we are testing.
 #[cfg(test)]
@@ -44,6 +37,3 @@ fn panic(info: &PanicInfo) -> ! {
 fn panic(info: &PanicInfo) -> ! {
     simpleosrust::test_panic_handler(info) // From srs/lib.rs
 }
-
-
-
